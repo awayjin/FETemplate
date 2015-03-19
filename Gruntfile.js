@@ -13,11 +13,11 @@ module.exports = function(grunt){
         //读取 包名
         pkg: grunt.file.readJSON("package.json"),
 
-        archive_name:grunt.option('name') || 'Winner',
+        archive_name: '<%= pkg.name %>'|| 'Winner',
 
         //清除之前的打包目录
         clean: {
-            pre: ["dist/", "build", "<%= archive_name %>*.zip"],
+            pre: ["public/", "dist/", "build/", "*.zip"],
             build: ["build/"],
             doc: ["doc"]
         },
@@ -27,11 +27,6 @@ module.exports = function(grunt){
                 banner: '/*<%= pkg.name %><%= grunt.template.today("yyyy-mm-dd HH:MM:ss TT")%>*/',
                 footer:  '\n/*! <%= grunt.template.today("yyyy-mm-dd HH:MM:ss") %> footer*/'
             },
-//           buildC: {
-//               files: {
-//                   '<%= paths.dist %>/js/ht_common.min.js': '<%= paths.js %>/ht_common.js'
-//               }
-//           },
             compresAllJS: {
                 files: [{
                     expand: true,
@@ -39,6 +34,16 @@ module.exports = function(grunt){
                     src: 'js/*.js',
                     dest: 'build/js'
                 }]
+            },
+
+            defaultJS:{
+                files: [{
+                    expand: true,
+                    cwd: './',
+                    src: 'js/*.js',
+                    dest: 'build'
+                }]
+
             }
         },
 
@@ -54,10 +59,19 @@ module.exports = function(grunt){
         cssmin: {
             options: {
                 //keepSpecialComments: 0, //删除特殊的注释, 不建议设置。 设置后可能会出现大面积的乱码
-                banner:  '/*!都是压缩后的min.css <%= pkg.name %><%= grunt.template.today("yyyy-mm-dd HH:MM:ss TT")%>*/'
+                banner:  '/*!压缩后的min.css,联系258246377@qq.com <%= pkg.name %><%= grunt.template.today("yyyy-mm-dd HH:MM:ss TT")%>*/'
             },
 
             minify: {
+                expand: true,
+                cwd: './css/',
+                src: ['*.css', '!*.min.css'],
+                dest: 'build/css',
+                ext: '.css'
+            },
+
+            //默认压缩
+            defaultCss: {
                 expand: true,
                 cwd: './css/',
                 src: ['*.css', '!*.min.css'],
@@ -114,22 +128,63 @@ module.exports = function(grunt){
                     ,{expand: true, cwd:"./", src: ['css/**'], dest: 'dist/css'} //复制 css 到测试版目录
                     ,{expand: true, cwd:"./", src: ['images/**'], dest: 'dist/'} //复制 images 到测试版目录
                 ]
+            },
+
+            defaultImg: {
+                files: [
+                    {expand: true, cwd: "./", src: ['./images/**'], dest: 'build/'}//img
+                    ,{expand: true, cwd:"./", src: ['**.html'], dest: 'build/'} //复制html 到测试版目录
+                    ,{expand: true, src: ['*', '!.gitignore', '!.DS_Store','!Gruntfile.js','!package.json','!node_modules/**','!go.sh','!.ftppass','!<%= archive_name %>*.zip', "!build", "!dist"], dest: 'build/'}
+                ]
             }
         },
 
         //压缩最终Build文件夹
         compress: {
+            //main: {
+            //    options: {
+            //       archive: '<%= archive_name %>_<%= grunt.template.today("yyyy年mm月dd日hh时MM分ss秒TT") %>.zip'
+            //       //archive: '<%= archive_name %>_<%= grunt.template.today("yyyy-mm-dd HH:MM:ss TT")%>.zip'
+            //    },
+            //    expand: true,
+            //    cwd: "build/",
+            //    src: ["**/*"],
+            //    dest: 'public/'
+            //}
+
             main: {
                 options: {
-                   archive: '<%= archive_name %>_<%= grunt.template.today("yyyy年mm月dd日hh时MM分ss秒TT") %>.zip'
-//                 ,archive: '<%= archive_name %>_<%= grunt.template.today("yyyy-mm-dd HH:MM:ss TT")%>.zip'
+                    //mode: 'gzip',
+                    //archive: '<%= archive_name %>_<%= grunt.template.today("yyyy-mm-dd HH:MM:ss TT")%>.zip'
+                    archive: '<%= archive_name %>_<%= grunt.template.today("yyyy-mm-ddTTHH-MM-ss")%>.zip' //不知道为什么MM后不能用 ":"
+                    //archive: '<%= archive_name %>_<%= grunt.template.today("yyyy年mm月dd日hh时MM分ss秒TT") %>.zip'
                 },
                 expand: true,
-                cwd: "build/",
-                src: "[**/*]",
-                dest: ''
-//                dest: '<%= archive_name %>_<%= grunt.template.today("yyyy-mm-dd_hhTT") %>.zip'
+                cwd: 'build/',
+                src: ['**/*']
+                //,dest: 'public/'
             }
+
+            //package:  {
+            //    options: {
+            //        mode: 'gzip'
+            //    },
+            //    expand: true,
+            //        cwd: 'build/',
+            //        src: ['**/*'],
+            //        dest: 'public/'
+            //},
+            //
+            //package2: {
+            //    options: {
+            //        mode: 'gzip',
+            //        archive: '<%= archive_name %>_<%= grunt.template.today("yyyy年mm月dd日hh时MM分ss秒TT") %>.zip'
+            //    },
+            //    expand: true,
+            //    cwd: 'build/',
+            //    src: ['**/*'],
+            //    dest: '' //public/
+            //}
         },
 
         //文档生成工具
@@ -179,20 +234,7 @@ module.exports = function(grunt){
 
         },
 
-        //这个没用，估计是Windows服务器
-        'ftp-deploy': {
-            build: {
-                auth: {
-                    host: '127.0.0.1',
-                    port: 21,
-                    authKey: 'key1',
-                    username: "root"
-                },
-                src: 'build',
-                dest: '/home/wwwroot/default/lottery',
-                exclusions: ['path/to/source/folder/**/.DS_Store', 'path/to/source/folder/**/Thumbs.db', 'path/to/dist/tmp']
-            }
-        },
+
 
         //发布到FTP服务器 : 请注意密码安全，ftp的帐号密码保存在主目录 .ftppass 文件
         'sftp-deploy': {
@@ -214,14 +256,15 @@ module.exports = function(grunt){
     });
 
 
+    //  grunt.loadNpmTasks("grunt-contrib-uglify");
+    grunt.registerTask("default", ["clean:pre", "less", "cssmin:defaultCss", "uglify:defaultJS", "copy:defaultImg"]);
 
     grunt.registerTask("dev", ["clean:build", "copy:main"]);
 
     //执行 grunt bundle --最终输出的文件 < name-生成日期.zip > 文件
-    grunt.registerTask("bundle", ["default", "clean:build", "cssmin", "uglify",  "copy:buildMain", "compress:main"]);
+    grunt.registerTask("bundle", ["default",  "compress:main"]);
 
-//    grunt.loadNpmTasks("grunt-contrib-uglify");
-    grunt.registerTask("default", ["clean:pre", "less", "copy:testMain"]);
+
 
     //实时监控自动刷新
     grunt.registerTask("live", ["connect:all", "watch"]);
@@ -229,7 +272,6 @@ module.exports = function(grunt){
 //    grunt.registerTask("ftp", ['ftpush']);
 
     grunt.registerTask("ssh", ['sftp-deploy']);
-
 
     //执行 grunt publish 可以直接上传项目文件到指定服务器FTP目录
     grunt.registerTask('publish', ['ftp-deploy']);
